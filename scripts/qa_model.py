@@ -337,29 +337,29 @@ class QASystem(object):
         valid: a list containing q, c and a.
         :return: loss on the valid dataset and the logit values
         """
-        
         q, c, a = valid
 
         # at test time we do not perform dropout.
-        input_feed =  self.get_feed_dict(q, c, a, 1.0)
-
+        input_feed = self.get_feed_dict(q, c, a, 1.0)
         output_feed = [self.logits]
-
         outputs = session.run(output_feed, input_feed)
 
         return outputs[0][0], outputs[0][1]
 
     def answer(self, session, dataset):
-        '''
-            Get the answers for dataset. Independent of how data iteration is implemented
-        '''
+        """
+        Get the answers for dataset. Independent of how data iteration is implemented
+        :param session:
+        :param dataset:
+        :return:
+        """
 
         yp, yp2 = self.test(session, dataset)
         # -- Boundary Model with a max span restriction of 15
         
         def func(y1, y2):
             max_ans = -999999
-            a_s, a_e= 0,0
+            a_s, a_e= 0, 0
             num_classes = len(y1)
             for i in xrange(num_classes):
                 for j in xrange(15):
@@ -380,12 +380,10 @@ class QASystem(object):
             a_s.append(_a_s)
             a_e.append(_a_e)
 
-        return (np.array(a_s), np.array(a_e))
+        return np.array(a_s), np.array(a_e)
 
     def evaluate_model(self, session, dataset):
         """
-
-    
         :param session: session should always be centrally managed in train.py
         :param dataset: a representation of our data, in some implementations, you can
                         pass in multiple components (arguments) of one dataset to this function
@@ -398,7 +396,6 @@ class QASystem(object):
         a_s, a_o = self.answer(session, [q, c, a])
         answers = np.hstack([a_s.reshape([sample, -1]), a_o.reshape([sample,-1])])
         gold_answers = np.array([a for (_,_, a) in dataset])
-
 
         em_score = 0
         em_1 = 0
@@ -446,7 +443,6 @@ class QASystem(object):
 
         if not tf.gfile.Exists(train_dir):
             tf.gfile.MkDir(train_dir)
-
 
         train, dev = dataset
 
