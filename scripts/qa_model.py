@@ -2,28 +2,21 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import time
 import logging
 
-import numpy as np
 import sys
 from six.moves import xrange  # pylint: disable=redefined-builtin
 import tensorflow as tf
-from general_utils import Progbar
-from data_utils import *
-from collections import defaultdict as ddict
+from scripts.general_utils import Progbar
+from scripts.data_utils import *
 
-from attention_wrapper import _maybe_mask_score
-from attention_wrapper import *
-from evaluate import exact_match_score, f1_score
-from tensorflow.python import debug as tf_debug
+from scripts.attention_wrapper import _maybe_mask_score
+from scripts.attention_wrapper import *
 from tensorflow.python.ops import array_ops
 
 
 import matplotlib
 matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-
 
 logging.basicConfig(stream = sys.stdout, level=logging.INFO)
 

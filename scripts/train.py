@@ -1,29 +1,11 @@
-import os
-import json
-
 import tensorflow as tf
-import numpy as np
 
-from qa_model import Encoder, QASystem, Decoder, BaselineDecoder
-from config import Config
-from data_utils import *
-from os.path import join as pjoin
+from scripts.qa_model import Encoder, QASystem, Decoder
+from scripts.config import Config
+from scripts.data_utils import *
 import os
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-
-def initialize_vocab(vocab_path):
-    if tf.gfile.Exists(vocab_path):
-        rev_vocab = []
-        with tf.gfile.GFile(vocab_path, mode="rb") as f:
-            rev_vocab.extend(f.readlines())
-        print(type(rev_vocab[0]))
-        rev_vocab = [str(line).strip('\n') for line in rev_vocab]
-        vocab = dict([(x, y) for (y, x) in enumerate(rev_vocab)])
-        return vocab, rev_vocab
-    else:
-        raise ValueError("Vocabulary file %s not found.", vocab_path)
-
-
 
 def run_func():
     config = Config()

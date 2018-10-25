@@ -5,22 +5,18 @@ from __future__ import print_function
 import io
 import os
 import json
-import sys
-import random
-from os.path import join as pjoin
-from config import Config
+from scripts.config import Config
 
 
 from tqdm import tqdm
-import numpy as np
 from six.moves import xrange
 import tensorflow as tf
 
-from qa_model import Encoder, QASystem, Decoder
+from scripts.qa_model import Encoder, QASystem, Decoder
 from preprocessing.squad_preprocess import data_from_json, maybe_download, squad_base_url, \
-    invert_map, tokenize, token_idx_map
-import qa_data
-from data_utils import *
+    tokenize
+from scripts import qa_data
+from scripts.data_utils import *
 
 import logging
 logging.basicConfig(level=logging.INFO)

@@ -23,4 +23,4 @@ class Config:
         return question, context, answer 
 
     question_train, context_train, answer_train = get_paths("val.small", data_dir)
-    question_dev ,context_dev ,answer_dev = get_paths("val.small", data_dir)
+    question_dev, context_dev, answer_dev = get_paths("val.small", data_dir)
