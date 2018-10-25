@@ -1,15 +1,15 @@
 class Config:
-    num_epochs = 5
+    num_epochs = 50
     batch_size = 16
-    train_embeddings=0
-    max_gradient_norm=-1
-    hidden_size=150
+    train_embeddings = 0
+    max_gradient_norm = -1
+    hidden_size = 150
     num_layers = 3
-    embedding_size=300
-    data_dir="data/squad"
+    embedding_size = 300
+    data_dir = "../data/squad"
     vocab_path = data_dir + "/vocab.dat"
     embed_path = data_dir + "/glove.trimmed.300.npz"
-    dropout_val=1.0
+    dropout_val = 1.0
     train_dir="models_lstm_basic"
     use_match=0
     keep_prob = 0.8

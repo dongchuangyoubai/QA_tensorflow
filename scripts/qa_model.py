@@ -18,7 +18,8 @@ from tensorflow.python.ops import array_ops
 import matplotlib
 matplotlib.use('Agg')
 
-logging.basicConfig(stream = sys.stdout, level=logging.INFO)
+#logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+logger = logging.getLogger()
 
 # -- A helper function to reverse a tensor along seq_dim
 
@@ -359,20 +360,20 @@ class QASystem(object):
         
         def func(y1, y2):
             max_ans = -999999
-            a_s, a_e= 0, 0
+            a_s, a_e = 0, 0
             num_classes = len(y1)
             for i in xrange(num_classes):
                 for j in xrange(15):
                     if i+j >= num_classes:
                         break
 
-                    curr_a_s = y1[i];
+                    curr_a_s = y1[i]
                     curr_a_e = y2[i+j]
                     if (curr_a_e+curr_a_s) > max_ans:
                         max_ans = curr_a_e + curr_a_s
                         a_s = i
                         a_e = i+j
-            return (a_s, a_e)
+            return a_s, a_e
 
         a_s, a_e = [], []
         for i in xrange(yp.shape[0]):
