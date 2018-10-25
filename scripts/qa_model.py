@@ -21,14 +21,15 @@ matplotlib.use('Agg')
 logging.basicConfig(stream = sys.stdout, level=logging.INFO)
 
 # -- A helper function to reverse a tensor along seq_dim
-def _reverse(input_, seq_lengths, seq_dim, batch_dim):
-  if seq_lengths is not None:
-    return array_ops.reverse_sequence(
-        input=input_, seq_lengths=seq_lengths,
-        seq_dim=seq_dim, batch_dim=batch_dim)
-  else:
-    return array_ops.reverse(input_, axis=[seq_dim])
 
+
+def _reverse(input_, seq_lengths, seq_dim, batch_dim):
+    if seq_lengths is not None:
+        return array_ops.reverse_sequence(
+            input=input_, seq_lengths=seq_lengths,
+            seq_dim=seq_dim, batch_dim=batch_dim)
+    else:
+        return array_ops.reverse(input_, axis=[seq_dim])
 
 
 class Encoder(object):
@@ -36,8 +37,7 @@ class Encoder(object):
         self.hidden_size = hidden_size
         self.init_weights = initializer
 
-
-    def encode(self, inputs, masks, encoder_state_input = None):
+    def encode(self, inputs, masks, encoder_state_input=None):
         """
         :param inputs: vector representations of question and passage (a tuple) 
         :param masks: masking sequences for both question and passage (a tuple)
@@ -47,10 +47,8 @@ class Encoder(object):
         :return: an encoded representation of the question and passage.
         """
 
-
         question, passage = inputs
         masks_question, masks_passage = masks    
-
 
         # read passage conditioned upon the question
         with tf.variable_scope("encoded_question"):
@@ -60,7 +58,6 @@ class Encoder(object):
         with tf.variable_scope("encoded_passage"):
             lstm_cell_passage  = tf.contrib.rnn.BasicLSTMCell(self.hidden_size, state_is_tuple = True)
             encoded_passage, (p_rep, _) =  tf.nn.dynamic_rnn(lstm_cell_passage, passage, masks_passage, dtype=tf.float32) # (-1, P, H)
-
 
         # outputs beyond sequence lengths are masked with 0s
         return encoded_question, encoded_passage , q_rep, p_rep
@@ -77,7 +74,6 @@ class BaselineDecoder(object):
         q_rep1 = tf.layers.dense(q_rep, input_size, name="W1")
         q_rep2 = tf.layers.dense(q_rep, input_size, name="W2")
 
-
         q_rep1 = tf.expand_dims(q_rep1, 1)
         logit_1 = tf.reduce_sum(q_rep1*encoded_passage, [2])
 
@@ -86,16 +82,13 @@ class BaselineDecoder(object):
 
         func = lambda score: _maybe_mask_score(score, mask, float("-inf"))
 
-        return [func(logit_1),func(logit_2)]
-
+        return [func(logit_1), func(logit_2)]
 
    
 class Decoder(object):
     def __init__(self, hidden_size, initializer= lambda : None):
         self.hidden_size = hidden_size
         self.init_weights = initializer
-
-
 
     def run_lstm(self, encoded_rep, q_rep, masks):
         encoded_question, encoded_passage = encoded_rep
@@ -116,12 +109,8 @@ class Decoder(object):
 
             output_attender_bw = _reverse(output_attender_bw, masks_passage, 1, 0)
 
-            
         output_attender = tf.concat([output_attender_fw, output_attender_bw], axis = -1) # (-1, P, 2*H)
         return output_attender
-
-
-
 
     def run_match_lstm(self, encoded_rep, masks):
         encoded_question, encoded_passage = encoded_rep
@@ -129,7 +118,6 @@ class Decoder(object):
 
         match_lstm_cell_attention_fn = lambda curr_input, state : tf.concat([curr_input, state], axis = -1)
         query_depth = encoded_question.get_shape()[-1]
-
 
         # output attention is false because we want to output the cell output and not the attention values
         with tf.variable_scope("match_lstm_attender"):
@@ -145,17 +133,14 @@ class Decoder(object):
 
             output_attender_bw = _reverse(output_attender_bw, masks_passage, 1, 0)
 
-        
         output_attender = tf.concat([output_attender_fw, output_attender_bw], axis = -1) # (-1, P, 2*H)
         return output_attender
-
 
     def run_answer_ptr(self, output_attender, masks, labels):
         batch_size = tf.shape(output_attender)[0]
         masks_question, masks_passage = masks
         labels = tf.unstack(labels, axis=1) 
         #labels = tf.ones([batch_size, 2, 1])
-
 
         answer_ptr_cell_input_fn = lambda curr_input, context : context # independent of question
         query_depth_answer_ptr = output_attender.get_shape()[-1]
@@ -167,9 +152,7 @@ class Decoder(object):
             answer_ptr_attender = AttentionWrapper(cell_answer_ptr, attention_mechanism_answer_ptr, cell_input_fn = answer_ptr_cell_input_fn)
             logits, _ = tf.nn.static_rnn(answer_ptr_attender, labels, dtype = tf.float32)
 
-        return logits 
-
-
+        return logits
 
     def decode_lstm(self, encoded_rep, q_rep, masks, labels):
         """ 
@@ -179,8 +162,6 @@ class Decoder(object):
         logits = self.run_answer_ptr(output_lstm, masks, labels)
         
         return logits
-
-
 
     def decode(self, encoded_rep, q_rep, masks, labels):
         """
@@ -202,9 +183,6 @@ class Decoder(object):
         logits = self.run_answer_ptr(output_attender, masks, labels)
     
         return logits
-    
-
-
 
 
 class QASystem(object):    
@@ -219,10 +197,8 @@ class QASystem(object):
 
         # ==== set up logging ======
 
-
         logger = logging.getLogger("QASystemLogger")
         self.logger = logger
-
 
         # ==== set up placeholder tokens ========
         self.embeddings = pretrained_embeddings
@@ -230,10 +206,7 @@ class QASystem(object):
         self.decoder = decoder
         self.config = config
 
-
         self.setup_placeholders()
-        
-
 
         # ==== assemble pieces ====
         with tf.variable_scope("qa"):
@@ -242,10 +215,6 @@ class QASystem(object):
             self.setup_loss()
             self.setup_train_op()
             self.saver = tf.train.Saver()
-
-        
-
-
 
     def setup_train_op(self):
         """
@@ -265,11 +234,9 @@ class QASystem(object):
                 self.global_grad = tf.global_norm(grads)
                 self.gradients = zip(grads, vars)
 
-
             self.train_op = adam_optimizer.apply_gradients(self.gradients)
 
         self.init = tf.global_variables_initializer()
-
 
     def get_feed_dict(self, questions, contexts, answers, dropout_val):
         """
@@ -287,7 +254,6 @@ class QASystem(object):
         padded_questions, question_lengths = pad_sequences(questions, 0)
         padded_contexts, passage_lengths = pad_sequences(contexts, 0)
 
-
         feed = {
             self.question_ids : padded_questions,
             self.passage_ids : padded_contexts,
@@ -299,11 +265,10 @@ class QASystem(object):
 
         return feed
 
-
     def setup_word_embeddings(self):
         '''
-            Create an embedding matrix (initialised with pretrained glove vectors and updated only if self.config.train_embeddings is true)
-            lookup into this matrix and apply dropout (which is 1 at test time and self.config.dropout at train time)
+        Create an embedding matrix (initialised with pretrained glove vectors and updated only if self.config.train_embeddings is true)
+        lookup into this matrix and apply dropout (which is 1 at test time and self.config.dropout at train time)
         '''
         with tf.variable_scope("vocab_embeddings"):
             _word_embeddings = tf.Variable(self.embeddings, name="_word_embeddings", dtype=tf.float32, trainable= self.config.train_embeddings)
@@ -312,9 +277,6 @@ class QASystem(object):
             # Apply dropout
             self.question = tf.nn.dropout(question_emb, self.dropout)
             self.passage  = tf.nn.dropout(passage_emb, self.dropout)
-            
-
-
 
     def setup_placeholders(self):
         self.question_ids = tf.placeholder(tf.int32, shape = [None, None], name = "question_ids")
@@ -342,9 +304,7 @@ class QASystem(object):
             self.logger.info("\n========Using Vanilla LSTM=========\n")
             logits = decoder.decode_lstm([encoded_question, encoded_passage], q_rep, [self.question_lengths, self.passage_lengths], self.labels)
 
-
         self.logits = logits
-
 
     def setup_loss(self):
         """
@@ -355,7 +315,6 @@ class QASystem(object):
         losses = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=self.logits[0], labels=self.labels[:,0])
         losses += tf.nn.sparse_softmax_cross_entropy_with_logits(logits=self.logits[1], labels=self.labels[:,1])
         self.loss = tf.reduce_mean(losses)
-
 
     def initialize_model(self, session, train_dir):
         """
@@ -373,9 +332,6 @@ class QASystem(object):
             session.run(self.init)                
             self.logger.info('Num params: %d' % sum(v.get_shape().num_elements() for v in tf.trainable_variables()))
 
-
-
-
     def test(self, session, valid):
         """
         valid: a list containing q, c and a.
@@ -392,7 +348,6 @@ class QASystem(object):
         outputs = session.run(output_feed, input_feed)
 
         return outputs[0][0], outputs[0][1]
-
 
     def answer(self, session, dataset):
         '''
@@ -417,19 +372,15 @@ class QASystem(object):
                         max_ans = curr_a_e + curr_a_s
                         a_s = i
                         a_e = i+j
-
             return (a_s, a_e)
-
 
         a_s, a_e = [], []
         for i in xrange(yp.shape[0]):
             _a_s, _a_e = func(yp[i], yp2[i])
             a_s.append(_a_s)
             a_e.append(_a_e)
- 
 
         return (np.array(a_s), np.array(a_e))
-
 
     def evaluate_model(self, session, dataset):
         """
@@ -468,15 +419,12 @@ class QASystem(object):
 
         return em_score
 
-
     def run_epoch(self, session, train):
         """
         Perform one complete pass over the training data and evaluate on dev
         """
-     
         nbatches = (len(train) + self.config.batch_size - 1) / self.config.batch_size
         prog = Progbar(target=nbatches)
-
 
         for i, (q_batch, c_batch, a_batch) in enumerate(minibatches(train, self.config.batch_size)):
 
@@ -485,9 +433,6 @@ class QASystem(object):
 
             _, train_loss = session.run([self.train_op, self.loss], feed_dict=input_feed)
             prog.update(i + 1, [("train loss", train_loss)])
-
-
-
 
     def train(self, session, dataset, train_dir):
         """
