@@ -22,9 +22,6 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 
-
-
-
 def initialize_vocab(vocab_path):
     if tf.gfile.Exists(vocab_path):
         rev_vocab = []

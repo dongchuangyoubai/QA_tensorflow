@@ -27,9 +27,9 @@ UNK_ID = 2
 def setup_args():
     parser = argparse.ArgumentParser()
     code_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)))
-    vocab_dir = os.path.join("data", "squad")
-    glove_dir = os.path.join("download", "dwr")
-    source_dir = os.path.join("data", "squad")
+    vocab_dir = os.path.join("..\data", "squad")
+    glove_dir = os.path.join("..\download", "dwr")
+    source_dir = os.path.join("..\data", "squad")
     parser.add_argument("--source_dir", default=source_dir)
     parser.add_argument("--glove_dir", default=glove_dir)
     parser.add_argument("--vocab_dir", default=vocab_dir)
@@ -70,7 +70,7 @@ def process_glove(args, vocab_list, save_path, size=4e5, random_init=True):
         else:
             glove = np.zeros((len(vocab_list), args.glove_dim))
         found = 0
-        with open(glove_path, 'r') as fh:
+        with open(glove_path, 'r',encoding='utf-8') as fh:
             for line in tqdm(fh, total=size):
                 array = line.lstrip().rstrip().split(" ")
                 word = array[0]
@@ -131,7 +131,7 @@ def data_to_token_ids(data_path, target_path, vocabulary_path,
     if not gfile.Exists(target_path):
         print("Tokenizing data in %s" % data_path)
         vocab, _ = initialize_vocabulary(vocabulary_path)
-        with gfile.GFile(data_path, mode="r") as data_file:
+        with gfile.GFile(data_path, mode="rb") as data_file:
             with gfile.GFile(target_path, mode="w") as tokens_file:
                 counter = 0
                 for line in data_file:

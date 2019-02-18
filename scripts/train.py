@@ -1,8 +1,6 @@
 import tensorflow as tf
 
-from qasystem import QASystem
-from encoder import Encoder
-from decoder import Decoder
+from qa_model import QASystem, Encoder, Decoder
 from config import Config
 from data_utils import *
 import os

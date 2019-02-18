@@ -34,7 +34,7 @@ def _reverse(input_, seq_lengths, seq_dim, batch_dim):
 
 
 class Encoder(object):
-    def __init__(self, hidden_size, initializer = lambda : None):#tf.contrib.layers.xavier_initializer):
+    def __init__(self, hidden_size, initializer=lambda: None):  # tf.contrib.layers.xavier_initializer):
         self.hidden_size = hidden_size
         self.init_weights = initializer
 
@@ -53,15 +53,17 @@ class Encoder(object):
 
         # read passage conditioned upon the question
         with tf.variable_scope("encoded_question"):
-            lstm_cell_question = tf.contrib.rnn.BasicLSTMCell(self.hidden_size, state_is_tuple = True)
-            encoded_question, (q_rep, _) = tf.nn.dynamic_rnn(lstm_cell_question, question, masks_question, dtype=tf.float32) # (-1, Q, H)
+            lstm_cell_question = tf.contrib.rnn.BasicLSTMCell(self.hidden_size, state_is_tuple=True)
+            encoded_question, (q_rep, _) = tf.nn.dynamic_rnn(lstm_cell_question, question, masks_question,
+                                                             dtype=tf.float32)  # (-1, Q, H)
 
         with tf.variable_scope("encoded_passage"):
-            lstm_cell_passage  = tf.contrib.rnn.BasicLSTMCell(self.hidden_size, state_is_tuple = True)
-            encoded_passage, (p_rep, _) =  tf.nn.dynamic_rnn(lstm_cell_passage, passage, masks_passage, dtype=tf.float32) # (-1, P, H)
+            lstm_cell_passage = tf.contrib.rnn.BasicLSTMCell(self.hidden_size, state_is_tuple=True)
+            encoded_passage, (p_rep, _) = tf.nn.dynamic_rnn(lstm_cell_passage, passage, masks_passage,
+                                                            dtype=tf.float32)  # (-1, P, H)
 
         # outputs beyond sequence lengths are masked with 0s
-        return encoded_question, encoded_passage , q_rep, p_rep
+        return encoded_question, encoded_passage, q_rep, p_rep
 
 
 class BaselineDecoder(object):
@@ -87,7 +89,7 @@ class BaselineDecoder(object):
 
    
 class Decoder(object):
-    def __init__(self, hidden_size, initializer= lambda : None):
+    def __init__(self, hidden_size, initializer=lambda: None):
         self.hidden_size = hidden_size
         self.init_weights = initializer
 
@@ -95,7 +97,7 @@ class Decoder(object):
         encoded_question, encoded_passage = encoded_rep
         masks_question, masks_passage = masks
 
-        q_rep = tf.expand_dims(q_rep, 1) # (batch_size, 1, D)
+        q_rep = tf.expand_dims(q_rep, 1)  # (batch_size, 1, D)
         encoded_passage_shape = tf.shape(encoded_passage)[1]
         q_rep = tf.tile(q_rep, [1, encoded_passage_shape, 1])
 
@@ -105,31 +107,32 @@ class Decoder(object):
             cell = tf.contrib.rnn.BasicLSTMCell(self.hidden_size, state_is_tuple = True)
             reverse_mixed_question_passage_rep = _reverse(mixed_question_passage_rep, masks_passage, 1, 0)
 
-            output_attender_fw, _ = tf.nn.dynamic_rnn(cell, mixed_question_passage_rep, dtype=tf.float32, scope ="rnn")    
-            output_attender_bw, _ = tf.nn.dynamic_rnn(cell, reverse_mixed_question_passage_rep, dtype=tf.float32, scope = "rnn")
+            output_attender_fw, _ = tf.nn.dynamic_rnn(cell, mixed_question_passage_rep, dtype=tf.float32, scope="rnn")
+            output_attender_bw, _ = tf.nn.dynamic_rnn(cell, reverse_mixed_question_passage_rep, dtype=tf.float32, scope="rnn")
 
             output_attender_bw = _reverse(output_attender_bw, masks_passage, 1, 0)
 
-        output_attender = tf.concat([output_attender_fw, output_attender_bw], axis = -1) # (-1, P, 2*H)
+        output_attender = tf.concat([output_attender_fw, output_attender_bw], axis=-1)  # (-1, P, 2*H)
         return output_attender
 
     def run_match_lstm(self, encoded_rep, masks):
         encoded_question, encoded_passage = encoded_rep
         masks_question, masks_passage = masks
 
-        match_lstm_cell_attention_fn = lambda curr_input, state : tf.concat([curr_input, state], axis = -1)
+        match_lstm_cell_attention_fn = lambda curr_input, state: tf.concat([curr_input, state], axis=-1)
         query_depth = encoded_question.get_shape()[-1]
 
         # output attention is false because we want to output the cell output and not the attention values
         with tf.variable_scope("match_lstm_attender"):
             attention_mechanism_match_lstm = BahdanauAttention(query_depth, encoded_question, memory_sequence_length = masks_question)
             cell = tf.contrib.rnn.BasicLSTMCell(self.hidden_size, state_is_tuple = True)
-            lstm_attender  = AttentionWrapper(cell, attention_mechanism_match_lstm, output_attention = False, attention_input_fn = match_lstm_cell_attention_fn)
+            lstm_attender = AttentionWrapper(cell, attention_mechanism_match_lstm, output_attention=False,
+                                              attention_input_fn=match_lstm_cell_attention_fn)
 
             # we don't mask the passage because masking the memories will be handled by the pointerNet
             reverse_encoded_passage = _reverse(encoded_passage, masks_passage, 1, 0)
 
-            output_attender_fw, _ = tf.nn.dynamic_rnn(lstm_attender, encoded_passage, dtype=tf.float32, scope ="rnn")    
+            output_attender_fw, _ = tf.nn.dynamic_rnn(lstm_attender, encoded_passage, dtype=tf.float32, scope="rnn")
             output_attender_bw, _ = tf.nn.dynamic_rnn(lstm_attender, reverse_encoded_passage, dtype=tf.float32, scope = "rnn")
 
             output_attender_bw = _reverse(output_attender_bw, masks_passage, 1, 0)
@@ -143,15 +146,17 @@ class Decoder(object):
         labels = tf.unstack(labels, axis=1) 
         #labels = tf.ones([batch_size, 2, 1])
 
-        answer_ptr_cell_input_fn = lambda curr_input, context : context # independent of question
+        answer_ptr_cell_input_fn = lambda curr_input, context: context  # independent of question
         query_depth_answer_ptr = output_attender.get_shape()[-1]
 
         with tf.variable_scope("answer_ptr_attender"):
-            attention_mechanism_answer_ptr = BahdanauAttention(query_depth_answer_ptr , output_attender, memory_sequence_length = masks_passage)
+            attention_mechanism_answer_ptr = BahdanauAttention(query_depth_answer_ptr, output_attender,
+                                                               memory_sequence_length=masks_passage)
             # output attention is true because we want to output the attention values
             cell_answer_ptr = tf.contrib.rnn.BasicLSTMCell(self.hidden_size, state_is_tuple = True )
-            answer_ptr_attender = AttentionWrapper(cell_answer_ptr, attention_mechanism_answer_ptr, cell_input_fn = answer_ptr_cell_input_fn)
-            logits, _ = tf.nn.static_rnn(answer_ptr_attender, labels, dtype = tf.float32)
+            answer_ptr_attender = AttentionWrapper(cell_answer_ptr, attention_mechanism_answer_ptr,
+                                                   cell_input_fn=answer_ptr_cell_input_fn)
+            logits, _ = tf.nn.static_rnn(answer_ptr_attender, labels, dtype=tf.float32)
 
         return logits
 
